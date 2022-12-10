@@ -3,7 +3,7 @@ mod poise_data;
 use poise::serenity_prelude::{self as serenity};
 use dotenv::dotenv;
 use poise_data::{Context, Data, Error};
-use commands::add_log::*;
+use commands::{add_log::*, get_this_month::*};
 
 /// Displays your or another user's account creation date
 #[poise::command(slash_command, prefix_command)]
@@ -22,7 +22,7 @@ async fn main() {
     dotenv().ok();
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![age(), add_log()],
+            commands: vec![age(), add_log(), get_this_month()],
             ..Default::default()
         })
         .token(std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN"))
