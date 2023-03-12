@@ -9,6 +9,8 @@ use serenity::model::prelude::interaction::Interaction::ApplicationCommand;
 use serenity::model::application::interaction::InteractionResponseType;
 use shuttle_secrets::SecretStore;
 
+mod controllers;
+
 struct Bot;
 
 #[async_trait]
