@@ -1,1 +1,1 @@
-pub static BASE: &str = "http://localhost:8080";
+pub static BASE: &str = "https://paylogger.an.r.appspot.com";
