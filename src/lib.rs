@@ -4,9 +4,11 @@ use serenity::async_trait;
 use serenity::builder::CreateApplicationCommandOption;
 use serenity::model::application::interaction::InteractionResponseType;
 use serenity::model::gateway::Ready;
+use serenity::model::prelude::application_command::ApplicationCommandOption;
 use serenity::model::prelude::interaction::Interaction::ApplicationCommand;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use services::category_service;
 use shuttle_secrets::SecretStore;
 
 mod controllers;
@@ -22,6 +24,10 @@ impl EventHandler for Bot {
     async fn ready(&self, ctx: Context, ready: Ready) {
         let guild_id = GuildId(1044972423587561504);
 
+        let categories = category_service::CategoryService::get_categories()
+            .await
+            .unwrap();
+
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands
                 .create_application_command(|command| {
@@ -33,12 +39,30 @@ impl EventHandler for Bot {
                                 .name("name")
                                 .kind(command::CommandOptionType::String)
                                 .description("category's name.")
+                                .required(true)
                         })
                 })
                 .create_application_command(|command| {
                     command
                         .name("get_categories")
                         .description("get all categories.")
+                })
+                .create_application_command(|command| {
+                    command
+                        .name("new_log")
+                        .description("add new log.")
+                        .create_option(|option| {
+                            categories.into_iter().fold(
+                                option
+                                    .name("category")
+                                    .kind(command::CommandOptionType::String)
+                                    .description("log's category.")
+                                    .required(true),
+                                |option, category| {
+                                    option.add_string_choice(category.name, category.id)
+                                },
+                            )
+                        })
                 })
         })
         .await
