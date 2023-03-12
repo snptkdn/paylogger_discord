@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::models::category_model::CategoryModel;
 use anyhow::Result;
 pub struct CategoryService {}
 
@@ -9,7 +10,7 @@ impl CategoryService {
     pub async fn add_category(name: &str) -> Result<()> {
         let client = reqwest::Client::new();
         let mut params = HashMap::new();
-        params.insert("name", name);
+        params.insert("name", name.replace("\\", "").replace("\"", ""));
 
         println!("{} as service", name);
         let res = client
@@ -22,5 +23,13 @@ impl CategoryService {
             Ok(_) => Ok(()),
             Err(e) => Err(e.into()),
         }
+    }
+
+    pub async fn get_categories() -> Result<Vec<CategoryModel>> {
+        let client = reqwest::Client::new();
+
+        let res = client.get(format!("{}/category", BASE)).send().await?;
+
+        Ok(res.json().await?)
     }
 }

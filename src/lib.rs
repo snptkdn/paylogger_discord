@@ -10,6 +10,7 @@ use serenity::prelude::*;
 use shuttle_secrets::SecretStore;
 
 mod controllers;
+mod models;
 mod services;
 
 use controllers::category_controller::CategoryController;
@@ -22,17 +23,23 @@ impl EventHandler for Bot {
         let guild_id = GuildId(1044972423587561504);
 
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
-            commands.create_application_command(|command| {
-                command
-                    .name("new_category")
-                    .description("add new log category.")
-                    .create_option(|option| {
-                        option
-                            .name("name")
-                            .kind(command::CommandOptionType::String)
-                            .description("category's name.")
-                    })
-            })
+            commands
+                .create_application_command(|command| {
+                    command
+                        .name("new_category")
+                        .description("add new log category.")
+                        .create_option(|option| {
+                            option
+                                .name("name")
+                                .kind(command::CommandOptionType::String)
+                                .description("category's name.")
+                        })
+                })
+                .create_application_command(|command| {
+                    command
+                        .name("get_categories")
+                        .description("get all categories.")
+                })
         })
         .await
         .unwrap();
@@ -55,6 +62,15 @@ impl EventHandler for Bot {
                     )
                     .await
                 }
+                "get_categories" => Ok(CategoryController::get_categories()
+                    .await
+                    .unwrap()
+                    .iter()
+                    .fold("".to_string(), |acc, category| {
+                        (acc + &category.name + "\n").to_string()
+                    })
+                    .to_string()),
+
                 command => unreachable!("Unknown command: {}", command),
             };
 
