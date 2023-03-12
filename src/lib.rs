@@ -1,6 +1,7 @@
 use serenity::async_trait;
 use anyhow::anyhow;
 
+use serenity::builder::CreateApplicationCommandOption;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
@@ -20,14 +21,24 @@ impl EventHandler for Bot {
                 command.name("hello").description("Say hello")
             }).create_application_command(|command| {
                 command.name("bye").description("Say Good Bye")
+            }).create_application_command(|command| {
+                command
+                    .name("new_category")
+                    .description("add new log category.")
+                    .create_option(|option|
+                        option
+                            .name("name")
+                            .kind(command::CommandOptionType::String)
+                            .description("category's name.")
+                    )
             })
         })
         .await
         .unwrap();
     }
 
-    async fn interaction_create(&self,ctx: Context,interaction: serenity::model::interactions::Interaction) {
-        if let ApplicationCommand(command) = interaction {
+    async fn interaction_create(&self,ctx: Context,interaction: serenity::model::application::interaction::Interaction) {
+        if let ApplicationCommand(command) = interaction.clone() {
             let response_content = match command.data.name.as_str() {
                 "hello" => "hello!!".to_owned(),
                 "bye" => "good bye!!".to_owned(),
