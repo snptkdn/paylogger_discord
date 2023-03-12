@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
+use crate::constraits::BASE;
 use crate::models::category_model::CategoryModel;
 use anyhow::Result;
 pub struct CategoryService {}
-
-static BASE: &str = "http://localhost:8080";
 
 impl CategoryService {
     pub async fn add_category(name: &str) -> Result<()> {
@@ -12,7 +11,6 @@ impl CategoryService {
         let mut params = HashMap::new();
         params.insert("name", name.replace("\\", "").replace("\"", ""));
 
-        println!("{} as service", name);
         let res = client
             .post(format!("{}/category", BASE))
             .form(&params)

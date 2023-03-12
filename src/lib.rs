@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use controllers::purchaselog_controller::PurchaseLogController;
 use serenity::async_trait;
 
 use serenity::builder::CreateApplicationCommandOption;
@@ -11,6 +12,7 @@ use serenity::prelude::*;
 use services::category_service;
 use shuttle_secrets::SecretStore;
 
+mod constraits;
 mod controllers;
 mod models;
 mod services;
@@ -52,16 +54,29 @@ impl EventHandler for Bot {
                         .name("new_log")
                         .description("add new log.")
                         .create_option(|option| {
+                            option
+                                .name("price")
+                                .kind(command::CommandOptionType::Integer)
+                                .description("used money.")
+                                .required(true)
+                        })
+                        .create_option(|option| {
                             categories.into_iter().fold(
                                 option
                                     .name("category")
-                                    .kind(command::CommandOptionType::String)
+                                    .kind(command::CommandOptionType::Integer)
                                     .description("log's category.")
                                     .required(true),
                                 |option, category| {
                                     option.add_string_choice(category.name, category.id)
                                 },
                             )
+                        })
+                        .create_option(|option| {
+                            option
+                                .name("date")
+                                .kind(command::CommandOptionType::Integer)
+                                .description("date when used money. default is today.")
                         })
                 })
         })
@@ -77,10 +92,6 @@ impl EventHandler for Bot {
         if let ApplicationCommand(command) = interaction {
             let result = match command.data.name.as_str() {
                 "new_category" => {
-                    println!(
-                        "{:?}",
-                        &command.data.options[0].value.clone().unwrap().to_string()
-                    );
                     CategoryController::add_category(
                         command.data.options[0].value.clone().unwrap().to_string(),
                     )
@@ -94,6 +105,36 @@ impl EventHandler for Bot {
                         (acc + &category.name + "\n").to_string()
                     })
                     .to_string()),
+                "new_log" => {
+                    PurchaseLogController::add_log_purchase(
+                        command.data.options[0] // price
+                            .value
+                            .clone()
+                            .unwrap()
+                            .as_i64()
+                            .unwrap(),
+                        command.data.options[1] // category
+                            .value
+                            .clone()
+                            .unwrap()
+                            .as_u64()
+                            .unwrap(),
+                        match command.data.options.len() > 2 {
+                            // date
+                            true => Some(
+                                command.data.options[2]
+                                    .value
+                                    .clone()
+                                    .unwrap()
+                                    .as_str()
+                                    .unwrap()
+                                    .to_string(),
+                            ),
+                            false => None,
+                        },
+                    )
+                    .await
+                }
 
                 command => unreachable!("Unknown command: {}", command),
             };
