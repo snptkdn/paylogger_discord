@@ -1,15 +1,18 @@
-use serenity::async_trait;
 use anyhow::anyhow;
+use serenity::async_trait;
 
 use serenity::builder::CreateApplicationCommandOption;
+use serenity::model::application::interaction::InteractionResponseType;
 use serenity::model::gateway::Ready;
+use serenity::model::prelude::interaction::Interaction::ApplicationCommand;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use serenity::model::prelude::interaction::Interaction::ApplicationCommand;
-use serenity::model::application::interaction::InteractionResponseType;
 use shuttle_secrets::SecretStore;
 
 mod controllers;
+mod services;
+
+use controllers::category_controller::CategoryController;
 
 struct Bot;
 
@@ -20,30 +23,38 @@ impl EventHandler for Bot {
 
         let commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands.create_application_command(|command| {
-                command.name("hello").description("Say hello")
-            }).create_application_command(|command| {
-                command.name("bye").description("Say Good Bye")
-            }).create_application_command(|command| {
                 command
                     .name("new_category")
                     .description("add new log category.")
-                    .create_option(|option|
+                    .create_option(|option| {
                         option
                             .name("name")
                             .kind(command::CommandOptionType::String)
                             .description("category's name.")
-                    )
+                    })
             })
         })
         .await
         .unwrap();
     }
 
-    async fn interaction_create(&self,ctx: Context,interaction: serenity::model::application::interaction::Interaction) {
-        if let ApplicationCommand(command) = interaction.clone() {
-            let response_content = match command.data.name.as_str() {
-                "hello" => "hello!!".to_owned(),
-                "bye" => "good bye!!".to_owned(),
+    async fn interaction_create(
+        &self,
+        ctx: Context,
+        interaction: serenity::model::application::interaction::Interaction,
+    ) {
+        if let ApplicationCommand(command) = interaction {
+            let result = match command.data.name.as_str() {
+                "new_category" => {
+                    println!(
+                        "{:?}",
+                        &command.data.options[0].value.clone().unwrap().to_string()
+                    );
+                    CategoryController::add_category(
+                        command.data.options[0].value.clone().unwrap().to_string(),
+                    )
+                    .await
+                }
                 command => unreachable!("Unknown command: {}", command),
             };
 
@@ -51,7 +62,12 @@ impl EventHandler for Bot {
                 command.create_interaction_response(&ctx.http, |response| {
                     response
                         .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(response_content))
+                        .interaction_response_data(|message| {
+                            message.content(match result {
+                                Ok(message) => message,
+                                Err(e) => e.to_string(),
+                            })
+                        })
                 });
 
             if let Err(why) = create_interaction_response.await {

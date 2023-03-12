@@ -1,8 +1,11 @@
+use crate::services::category_service::CategoryService;
 use anyhow::Result;
-struct CategoryController{}
+pub struct CategoryController {}
 
 impl CategoryController {
-    pub fn add_category(name: &str) -> Result<()> {
-        todo!()
+    pub async fn add_category(name: String) -> Result<String> {
+        println!("{} as controller", &name);
+        CategoryService::add_category(&name).await?;
+        Ok("カテゴリを追加しました！".to_string())
     }
 }
