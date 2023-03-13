@@ -1,6 +1,9 @@
 use anyhow::anyhow;
+use anyhow::Result;
 use controllers::purchaselog_controller::PurchaseLogController;
+use dotenv::dotenv;
 use serenity::async_trait;
+use std::env;
 
 use serenity::builder::CreateApplicationCommandOption;
 use serenity::model::application::interaction::InteractionResponseType;
@@ -158,12 +161,11 @@ impl EventHandler for Bot {
     }
 }
 
-#[shuttle_service::main]
-async fn serenity(
-    #[shuttle_secrets::Secrets] secret_store: SecretStore,
-) -> shuttle_service::ShuttleSerenity {
+#[tokio::main]
+async fn main() -> Result<()> {
+    dotenv().ok();
     // Get the discord token set in `Secrets.toml`
-    let token = if let Some(token) = secret_store.get("DISCORD_TOKEN") {
+    let token = if let token = env::var("DISCORD_TOKEN").unwrap() {
         token
     } else {
         return Err(anyhow!("'DISCORD_TOKEN' was not found").into());
@@ -172,10 +174,12 @@ async fn serenity(
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    let client = Client::builder(&token, intents)
+    let mut client = Client::builder(&token, intents)
         .event_handler(Bot)
         .await
         .expect("Err creating client");
 
-    Ok(client)
+    client.start().await;
+
+    Ok(())
 }
